@@ -1,232 +1,360 @@
-# AIoT Smart Recycling System
+# AIoT Smart Recycling System with Raspberry Pi 5
 
-Raspberry Pi 5, LCD Touch Display, Camera, YOLO 모델, GPIO 센서를 활용한 **AIoT 기반 스마트 분리수거 시스템**입니다. 사용자가 쓰레기를 올려놓고 Sort 버튼을 누르면 카메라로 이미지를 캡처하고, YOLO 모델을 통해 분류한 뒤, Servo Motor를 이용해 분류판을 해당 카테고리 방향으로 이동시키는 구조입니다. AI 분류 신뢰도가 낮거나 모델이 없는 경우에는 수동 선택 모드로 전환되어 시연 환경에서도 전체 흐름을 테스트할 수 있습니다.
+An AIoT-based smart recycling kiosk prototype built with **Raspberry Pi 5**, **camera-based waste classification**, **touch display UI**, **YOLO/manual sorting**, **user point rewards**, **motion-based screen control**, **buzzer feedback**, and **CSV logging**.
 
-본 프로젝트는 교내 IoT/AIoT 실습 및 전시 시연을 목적으로 제작되었습니다.
-
----
-
-## 주요 기능
-
-- **LCD Touch Display 기반 GUI**
-  - 800×480 해상도 기준 전체 화면 UI
-  - Tkinter 기반 터치 인터페이스
-  - 사용자 로그인, 회원가입, 게스트 모드 지원
-
-- **카메라 기반 자동 캡처**
-  - Raspberry Pi CSI Camera 우선 사용
-  - CSI 카메라 사용 실패 시 USB Camera로 대체
-  - 프레임 변화량과 안정 상태를 기반으로 쓰레기 이미지 자동 캡처
-
-- **YOLO 기반 쓰레기 분류**
-  - `models/best.pt` 파일이 존재하면 YOLO 모델 자동 로드
-  - Plastic, Can/Metal, Paper, Glass, General Waste 분류
-  - 모델 미탑재 또는 낮은 confidence 상황에서는 수동 선택 모드 제공
-
-- **분류판 제어**
-  - Servo Motor를 이용해 분류 카테고리별 각도로 이동
-  - 관리자 모드에서 Servo Test 가능
-
-- **센서 기반 안전 및 상태 확인**
-  - 초음파 센서를 이용한 투입구 손/이물질 감지 기능
-  - DHT 센서 기반 온습도 측정 및 화재 경보 확장 기능
-  - HX711 로드셀 기반 수거함 무게 측정 확장 기능
-  - PIR Motion Sensor 기반 화면 절전 기능
-
-- **포인트 및 사용자 관리**
-  - 사용자 ID/PIN 기반 로그인
-  - PIN은 SHA-256 해시로 저장
-  - 분리수거 성공 시 사용자에게 포인트 지급
-  - 게스트 사용자는 포인트 적립 없이 분류 기능만 사용 가능
-
-- **로그 및 통계 관리**
-  - 분류 결과를 CSV 파일로 저장
-  - 사용자별 분리수거 로그 조회
-  - 관리자용 전체 로그 확인
-  - 당일 카테고리별 통계 화면 제공
-
-- **관리자 모드**
-  - 센서 상태 확인
-  - Servo 테스트
-  - 카메라 테스트
-  - 초음파 안전 테스트
-  - 화재 경보 테스트
-  - 사용자 목록 확인
-  - 분류 로그 초기화
+This project is designed as an integrated smart recycling system that helps users classify waste into major recycling categories and provides sorting guidance, feedback sounds, and operation logs for monitoring and demonstration purposes.
 
 ---
 
-## 사용 기술
+## 1. Project Overview
 
-| 구분 | 기술 |
-|---|---|
-| Language | Python 3 |
-| GUI | Tkinter |
-| Camera | Picamera2, OpenCV |
-| AI Model | Ultralytics YOLO |
-| GPIO Control | gpiozero, lgpio |
-| Image Processing | OpenCV, NumPy, Pillow |
-| Data Logging | CSV, JSON |
-| Target Board | Raspberry Pi 5 |
+The **AIoT Smart Recycling System** is a Raspberry Pi 5-based recycling kiosk that combines computer vision, sensors, and an interactive LCD interface.
+
+The system captures a waste image using a Raspberry Pi camera or USB camera, attempts to classify it using a YOLO model, and then guides the user through the correct recycling category. If the AI model is missing or the confidence is too low, the system automatically falls back to manual selection mode.
+
+The system also supports optional hardware features such as a servo motor, ultrasonic sensor, DHT temperature/humidity sensor, HX711 load cell, PIR motion sensor, LED, and piezo buzzer.
 
 ---
 
-## 하드웨어 구성
+## 2. Key Features
 
-| 부품 | 용도 |
-|---|---|
-| Raspberry Pi 5 | 메인 제어 보드 |
-| 7-inch LCD Touch Display | 사용자 인터페이스 출력 및 터치 입력 |
-| Raspberry Pi Camera 또는 USB Camera | 쓰레기 이미지 캡처 |
-| Servo Motor | 분류판 각도 제어 |
-| LED | 상태 표시 |
-| Piezo Buzzer | 버튼 클릭음, 포인트 적립음, 화재 경보음 |
-| PIR Motion Sensor | 모션 감지 기반 화면 절전 |
-| HC-SR04 Ultrasonic Sensor | 투입구 안전 확인 |
-| DHT22/DHT11 | 온습도 및 화재 경보 확장 |
-| HX711 + Load Cell | 수거함 무게 측정 확장 |
+### AI-Based Waste Classification
 
----
+* Uses a YOLO model when `models/best.pt` exists.
+* Automatically switches to manual selection mode if the model is missing.
+* Supports confidence-based decision flow.
+* Maps YOLO labels to recycling categories.
 
-## GPIO Pin Map
+### Manual Sorting Mode
 
-GPIO 번호는 **BCM 번호 기준**입니다.
+* Allows the user to manually select the correct waste category.
+* Useful when the AI model confidence is low or the model is unavailable.
 
-| 기능 | BCM GPIO | 물리 핀 | 설명 |
-|---|---:|---:|---|
-| DHT22/DHT11 DATA | GPIO4 | Pin 7 | 온습도 센서 데이터 |
-| Ultrasonic TRIG | GPIO23 | Pin 16 | 초음파 센서 Trigger |
-| Ultrasonic ECHO | GPIO24 | Pin 18 | 초음파 센서 Echo, 전압 분배 필수 |
-| Servo Signal | GPIO18 | Pin 12 | 서보모터 PWM 신호 |
-| LED | GPIO27 | Pin 13 | 상태 표시 LED |
-| Buzzer | GPIO22 | Pin 15 | 피에조 부저 |
-| PIR Motion OUT | GPIO25 | Pin 22 | 모션 감지 센서 출력 |
-| HX711 DT/DOUT | GPIO5 | Pin 29 | 로드셀 데이터 |
-| HX711 SCK/CLK | GPIO6 | Pin 31 | 로드셀 클럭 |
+### Touch Display UI
 
-> HC-SR04의 Echo 출력은 5V일 수 있으므로 Raspberry Pi GPIO 보호를 위해 전압 분배 회로를 반드시 구성해야 합니다.
+* Built with Python Tkinter.
+* Designed for an 800x480 7-inch LCD touch display.
+* Fullscreen kiosk-style interface.
+* Includes home screen, camera preview, result screen, statistics screen, user login/register screen, and admin mode.
 
----
+### Recycling Categories
 
-## 프로젝트 구조
+The system classifies waste into the following categories:
 
-```bash
-aiot_smart_recycling/
-├── app.py
-├── models/
-│   └── best.pt              # YOLO 학습 모델, 직접 추가
-├── captures/                # 자동 생성, 캡처 이미지 저장
-├── logs/                    # 자동 생성, 로그 및 사용자 정보 저장
-│   ├── sorting_log.csv
-│   └── users.json
-└── README.md
+* Plastic
+* Can/Metal
+* Paper
+* Glass
+* General Waste
+
+### User Account and Point System
+
+* Users can register with an ID and PIN.
+* PINs are stored as SHA-256 hashes.
+* Each successful sorting action can reward points.
+* Guest mode is also supported.
+* User point data is stored in `logs/users.json`.
+
+### CSV Logging
+
+Each sorting result is saved to a CSV file.
+
+Logged information includes:
+
+* Time
+* User ID
+* User total points
+* Predicted category
+* Final category
+* Sorting method
+* Confidence
+* User confirmation
+* Earned points
+* Bin weight
+* Image path
+* Status
+
+The log file is stored at:
+
+```text
+logs/sorting_log.csv
 ```
 
-`captures/`, `logs/` 폴더는 프로그램 실행 시 자동으로 생성됩니다. `models/` 폴더와 `best.pt` 파일은 사용자가 직접 준비해야 합니다.
+### Motion-Based Screen Control
+
+* Uses a PIR motion sensor.
+* If no motion is detected for a configured time, the display is turned off or covered with a black overlay.
+* When motion is detected again, the screen is restored.
+* This helps reduce power usage and screen burn-in during idle time.
+
+### Buzzer Feedback
+
+The system provides buzzer feedback for:
+
+* Button click sound
+* Point reward sound
+* Fire alarm siren pattern
+
+### Fire Alarm Mode
+
+* Optional DHT temperature monitoring.
+* If temperature remains above a configured threshold, the system displays a fire alarm screen and plays an alarm sound.
+* The alarm is cleared after the temperature returns to a safe range for a configured duration.
+
+### Admin Mode
+
+Admin mode provides maintenance and testing features such as:
+
+* Sensor status check
+* Servo motor test
+* Camera test
+* Log reset
+* System information monitoring
+
+Default admin password:
+
+```text
+0000
+```
+
+It is recommended to change this value before deployment.
 
 ---
 
-## 설치 방법
+## 3. System Workflow
 
-### 1. 시스템 패키지 설치
+The basic sorting workflow is as follows:
+
+```text
+1. User logs in or continues as guest
+2. User places waste on the tray
+3. User presses the Sort button
+4. Camera preview starts
+5. System waits until the frame becomes stable
+6. Image is captured and saved
+7. YOLO classification is attempted
+8. If classification is successful:
+   - User confirms or corrects the result
+9. If classification fails:
+   - Manual category selection is shown
+10. System saves the result to CSV log
+11. User earns points if logged in
+12. Result and recycling guide are displayed
+13. Servo/LED/buzzer actions are triggered if enabled
+```
+
+---
+
+## 4. Hardware Requirements
+
+### Main Hardware
+
+* Raspberry Pi 5
+* Raspberry Pi OS
+* 7-inch HDMI LCD touch display
+* Raspberry Pi Camera Module or USB camera
+* MicroSD card
+* 5V power supply
+
+### Optional Sensors and Actuators
+
+* PIR motion sensor
+* Piezo buzzer
+* LED
+* Servo motor
+* HC-SR04 ultrasonic sensor
+* DHT11 or DHT22 temperature/humidity sensor
+* HX711 load cell amplifier
+* Load cell
+
+---
+
+## 5. GPIO Pin Map
+
+The project uses **BCM GPIO numbering**.
+
+| Component        | GPIO Pin | Physical Pin | Description                     |
+| ---------------- | -------: | -----------: | ------------------------------- |
+| DHT11/DHT22 DATA |    GPIO4 |        Pin 7 | Temperature and humidity sensor |
+| HC-SR04 TRIG     |   GPIO23 |       Pin 16 | Ultrasonic trigger              |
+| HC-SR04 ECHO     |   GPIO24 |       Pin 18 | Ultrasonic echo                 |
+| Servo Signal     |   GPIO18 |       Pin 12 | Sorting plate servo motor       |
+| LED              |   GPIO27 |       Pin 13 | Status LED                      |
+| Buzzer           |   GPIO22 |       Pin 15 | Piezo buzzer                    |
+| PIR Motion OUT   |   GPIO25 |       Pin 22 | Motion detection sensor         |
+| HX711 DT/DOUT    |    GPIO5 |       Pin 29 | Load cell data                  |
+| HX711 SCK/CLK    |    GPIO6 |       Pin 31 | Load cell clock                 |
+
+> Important: The HC-SR04 echo pin outputs 5V. Raspberry Pi GPIO pins are 3.3V logic. Use a voltage divider or level shifter for the ECHO pin.
+
+---
+
+## 6. Software Requirements
+
+The project is written in Python and uses the following main libraries:
+
+* Tkinter
+* OpenCV
+* NumPy
+* Pillow
+* Picamera2
+* gpiozero
+* lgpio
+* ultralytics
+* adafruit-circuitpython-dht
+
+---
+
+## 7. Project Structure
+
+Recommended repository structure:
+
+```text
+aiot-smart-recycling/
+├── app.py
+├── README.md
+├── models/
+│   └── best.pt
+├── captures/
+│   └── captured images
+├── logs/
+│   ├── sorting_log.csv
+│   └── users.json
+└── .gitignore
+```
+
+### Important Files
+
+| File or Directory      | Description                      |
+| ---------------------- | -------------------------------- |
+| `app.py`               | Main integrated application code |
+| `models/best.pt`       | YOLO model file                  |
+| `captures/`            | Saved waste images               |
+| `logs/sorting_log.csv` | Sorting result log               |
+| `logs/users.json`      | User account and point data      |
+| `.gitignore`           | Git ignore rules                 |
+
+---
+
+## 8. Installation
+
+### Step 1. Update Raspberry Pi
 
 ```bash
 sudo apt update
 sudo apt upgrade -y
+```
 
+### Step 2. Install System Packages
+
+```bash
 sudo apt install -y \
   python3-pip \
   python3-venv \
   python3-tk \
   python3-opencv \
+  python3-pil \
   python3-picamera2 \
   python3-gpiozero \
-  python3-lgpio
+  python3-lgpio \
+  libatlas-base-dev
 ```
 
-### 2. 프로젝트 폴더 생성
+### Step 3. Create Project Directory
 
 ```bash
 mkdir -p ~/aiot_smart_recycling
 cd ~/aiot_smart_recycling
 ```
 
-`app.py` 파일을 해당 폴더에 복사합니다.
+Place `app.py` inside this directory.
 
-### 3. Python 가상환경 생성
+### Step 4. Create Required Folders
 
 ```bash
-python3 -m venv .venv --system-site-packages
-source .venv/bin/activate
+mkdir -p models captures logs
+```
+
+### Step 5. Create Python Virtual Environment
+
+Using `--system-site-packages` is recommended because Picamera2 and some Raspberry Pi packages are often installed through apt.
+
+```bash
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+```
+
+### Step 6. Install Python Packages
+
+```bash
 pip install --upgrade pip
+pip install numpy pillow ultralytics adafruit-circuitpython-dht
 ```
 
-### 4. Python 패키지 설치
+If OpenCV is not available through apt, install it with pip:
 
 ```bash
-pip install numpy pillow ultralytics adafruit-circuitpython-dht adafruit-blinka
+pip install opencv-python
 ```
-
-Raspberry Pi 환경에서는 `picamera2`, `opencv`, `gpiozero`는 pip보다 apt 패키지로 설치하는 것이 안정적입니다.
 
 ---
 
-## YOLO 모델 준비
+## 9. YOLO Model Setup
 
-YOLO 모델을 사용하는 경우 다음 구조로 모델 파일을 배치합니다.
+Place your trained YOLO model at:
 
-```bash
-mkdir -p models
-cp best.pt models/best.pt
+```text
+models/best.pt
 ```
 
-모델 파일이 없으면 프로그램은 자동으로 수동 선택 모드로 동작합니다.
-
-지원 카테고리는 다음과 같습니다.
+The application checks this path automatically:
 
 ```python
-Plastic
-Can/Metal
-Paper
-Glass
-General Waste
+MODEL_PATH = "models/best.pt"
 ```
 
-모델의 클래스 이름이 코드의 `CLASS_TO_CATEGORY`에 등록되어 있어야 정상적으로 카테고리 매핑이 됩니다. 학습 모델의 class name이 다르다면 `app.py` 상단의 `CLASS_TO_CATEGORY`를 수정하십시오.
+If the model file does not exist, the system will run in manual selection mode.
 
 ---
 
-## 실행 방법
+## 10. Label Mapping
 
-```bash
-cd ~/aiot_smart_recycling
-source .venv/bin/activate
-python app.py
+The system maps YOLO model labels to recycling categories through `CLASS_TO_CATEGORY`.
+
+Example:
+
+```python
+CLASS_TO_CATEGORY = {
+    "plastic": "Plastic",
+    "plastic bottle": "Plastic",
+    "bottle": "Plastic",
+    "pet bottle": "Plastic",
+
+    "can": "Can/Metal",
+    "metal": "Can/Metal",
+    "aluminum can": "Can/Metal",
+
+    "paper": "Paper",
+    "cardboard": "Paper",
+
+    "glass": "Glass",
+    "glass bottle": "Glass",
+
+    "general waste": "General Waste",
+    "trash": "General Waste",
+    "waste": "General Waste",
+}
 ```
 
-전체 화면 모드에서 실행되며, `Esc` 키를 누르면 전체 화면이 해제됩니다.
+If your YOLO model uses different class names, update this dictionary.
 
 ---
 
-## 기본 사용 흐름
+## 11. Configuration
 
-1. 프로그램 실행
-2. 회원가입, 로그인 또는 게스트 모드 선택
-3. 쓰레기를 카메라 앞에 올림
-4. `Sort` 버튼 선택
-5. 카메라가 프레임 안정 상태를 확인한 뒤 이미지 캡처
-6. YOLO 모델이 카테고리 분류
-7. confidence가 낮거나 모델이 없으면 수동 선택
-8. 초음파 센서로 투입구 안전 여부 확인
-9. Servo Motor가 카테고리별 각도로 이동
-10. 사용자가 투입 완료를 누르면 로그 저장
-11. 로그인 사용자는 포인트 적립
+Most user-editable settings are located near the top of `app.py`.
 
----
-
-## 주요 설정값
-
-`app.py` 상단에서 하드웨어 사용 여부와 기준값을 수정할 수 있습니다.
+### Sensor Enable Settings
 
 ```python
 USE_DHT = False
@@ -238,43 +366,328 @@ USE_MOTION_SENSOR = True
 USE_LOADCELL = False
 ```
 
-하드웨어가 모두 연결되어 있지 않은 경우에도 UI 및 전체 분류 흐름을 테스트할 수 있도록 일부 센서는 기본적으로 비활성화되어 있습니다. 실제 하드웨어를 연결한 뒤 필요한 값을 `True`로 변경하면 됩니다.
+If a hardware component is not connected, set the corresponding option to `False`.
 
-### YOLO 설정
+### Camera Settings
 
 ```python
-MODEL_PATH = "models/best.pt"
+CAMERA_WIDTH = 640
+CAMERA_HEIGHT = 480
+CAMERA_FPS = 10
+```
+
+### Classification Confidence
+
+```python
 MIN_CONFIDENCE = 0.25
 ```
 
-### 관리자 비밀번호
+If the AI model is too sensitive, increase this value.
+If the model often fails to classify objects, decrease this value.
+
+### Frame Stability Settings
 
 ```python
-ADMIN_PASSWORD = "0000"
+FRAME_DIFF_THRESHOLD = 15.0
+STABLE_TIME_SEC = 2
+STABILITY_TIMEOUT_SEC = 10
 ```
 
-### 화면 절전 설정
+These values control automatic image capture based on frame stability.
+
+### Motion Screen-Off Settings
 
 ```python
 MOTION_SCREEN_OFF_SEC = 30
 MOTION_CHECK_INTERVAL_MS = 1000
 ```
 
-PIR Motion Sensor에서 30초 동안 움직임이 감지되지 않으면 화면이 꺼지거나 검은색 오버레이로 대체됩니다. 움직임이 다시 감지되면 화면이 복구됩니다.
+If no motion is detected for 30 seconds, the screen is turned off or covered with a black overlay.
 
-### 포인트 설정
+### Point Reward
 
 ```python
 POINT_PER_SORT = 10
 ```
 
-로그인한 사용자가 분리수거를 성공적으로 완료하면 10 Point가 적립됩니다.
+Each successful sorting action gives 10 points to a logged-in user.
+
+### Admin Password
+
+```python
+ADMIN_PASSWORD = "0000"
+```
+
+Change this value before using the system in a real environment.
 
 ---
 
-## Servo 각도 설정
+## 12. Running the Application
 
-실제 분류판 구조에 맞게 각도를 조정해야 합니다.
+Move to the project directory:
+
+```bash
+cd ~/aiot_smart_recycling
+```
+
+Activate the virtual environment:
+
+```bash
+source venv/bin/activate
+```
+
+Run the application:
+
+```bash
+python app.py
+```
+
+To exit fullscreen mode, press:
+
+```text
+ESC
+```
+
+---
+
+## 13. Running on Boot
+
+To run the application automatically when Raspberry Pi starts, create a systemd service.
+
+### Step 1. Create Service File
+
+```bash
+sudo nano /etc/systemd/system/aiot-smart-recycling.service
+```
+
+### Step 2. Add the Following Content
+
+Update the project path if needed.
+
+```ini
+[Unit]
+Description=AIoT Smart Recycling System
+After=graphical.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/aiot_smart_recycling
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+ExecStart=/home/pi/aiot_smart_recycling/venv/bin/python /home/pi/aiot_smart_recycling/app.py
+Restart=on-failure
+
+[Install]
+WantedBy=graphical.target
+```
+
+### Step 3. Enable the Service
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable aiot-smart-recycling.service
+sudo systemctl start aiot-smart-recycling.service
+```
+
+### Step 4. Check Status
+
+```bash
+systemctl status aiot-smart-recycling.service
+```
+
+---
+
+## 14. Log Format
+
+The sorting log is saved as:
+
+```text
+logs/sorting_log.csv
+```
+
+The CSV columns are:
+
+```text
+Time
+User ID
+User Total Points
+Predicted Category
+Final Category
+Method
+Confidence
+User Confirmed
+Earned Points
+Bin Weight
+Image Path
+Status
+```
+
+Example log row:
+
+```text
+2026-06-10 21:30:12, user01, 120, Plastic, Plastic, Auto, 0.842, Yes, 10, 0.000kg, captures/2026-06-10_21-30-12.jpg, Completed
+```
+
+---
+
+## 15. User Data
+
+User account data is saved in:
+
+```text
+logs/users.json
+```
+
+PIN values are not stored directly.
+They are stored as SHA-256 hashes.
+
+Example structure:
+
+```json
+{
+  "user01": {
+    "id": "user01",
+    "name": "User user01",
+    "pin_hash": "hashed_pin_value",
+    "points": 50,
+    "created_at": "2026-06-10 21:00:00"
+  }
+}
+```
+
+---
+
+## 16. Admin Mode
+
+Admin mode is used for maintenance and testing.
+
+Typical admin features include:
+
+* Sensor status check
+* Servo test
+* Camera test
+* Log reset
+* System path check
+* Model status check
+
+Default password:
+
+```text
+0000
+```
+
+For security, change this value in `app.py`.
+
+---
+
+## 17. Recommended `.gitignore`
+
+Create a `.gitignore` file:
+
+```bash
+nano .gitignore
+```
+
+Recommended content:
+
+```gitignore
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+
+# Logs and generated files
+logs/
+captures/
+
+# Model weights
+models/*.pt
+models/*.onnx
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+```
+
+If you want to share a small demo model, you may remove `models/*.pt` from `.gitignore`.
+However, large model files are usually better managed with Git LFS or released separately.
+
+---
+
+## 18. Troubleshooting
+
+### 1. GPIO does not work on Raspberry Pi 5
+
+This project uses `lgpio` through gpiozero.
+
+Make sure the following environment variable is set before importing gpiozero:
+
+```python
+os.environ.setdefault("GPIOZERO_PIN_FACTORY", "lgpio")
+```
+
+Also install lgpio:
+
+```bash
+sudo apt install -y python3-lgpio
+```
+
+### 2. Camera does not open
+
+Check whether the camera is detected:
+
+```bash
+rpicam-hello --list-cameras
+```
+
+If using a USB camera:
+
+```bash
+ls /dev/video*
+```
+
+### 3. YOLO model is not loaded
+
+Check that the model exists:
+
+```bash
+ls models/best.pt
+```
+
+If the file does not exist, the system will use manual mode.
+
+### 4. Touch display does not fit the screen
+
+Check these values in `app.py`:
+
+```python
+LCD_WIDTH = 800
+LCD_HEIGHT = 480
+FULLSCREEN = True
+```
+
+Adjust them according to your display resolution.
+
+### 5. Display does not turn off with motion sensor
+
+The code attempts to turn off the display using system commands such as `vcgencmd` and `xset`.
+If these commands fail depending on the display environment, the system uses a black fullscreen overlay as a fallback.
+
+### 6. Ultrasonic sensor gives unstable values
+
+Check the wiring carefully.
+The HC-SR04 ECHO pin must be converted from 5V to 3.3V before connecting to Raspberry Pi GPIO.
+
+### 7. Servo angle does not match the physical sorting path
+
+Adjust this dictionary:
 
 ```python
 SERVO_ANGLE_MAP = {
@@ -286,124 +699,58 @@ SERVO_ANGLE_MAP = {
 }
 ```
 
-관리자 모드의 Servo Test 기능을 활용하여 실제 분류함 위치에 맞도록 값을 보정하십시오.
+Use Admin Mode to test and calibrate the servo angles.
 
 ---
 
-## 로그 파일
+## 19. Current Limitations
 
-분류 기록은 다음 파일에 저장됩니다.
-
-```bash
-logs/sorting_log.csv
-```
-
-저장되는 주요 항목은 다음과 같습니다.
-
-| 항목 | 설명 |
-|---|---|
-| Time | 분류 시간 |
-| User ID | 사용자 ID 또는 Guest |
-| User Total Points | 사용자 누적 포인트 |
-| Predicted Category | AI 예측 카테고리 |
-| Final Category | 최종 선택 카테고리 |
-| Method | Auto 또는 Manual |
-| Confidence | AI confidence |
-| User Confirmed | 사용자 확인 여부 |
-| Earned Points | 적립 포인트 |
-| Bin Weight | 수거함 무게 |
-| Image Path | 캡처 이미지 경로 |
-| Status | 처리 상태 |
-
-사용자 정보는 다음 파일에 저장됩니다.
-
-```bash
-logs/users.json
-```
-
-PIN은 원문이 아닌 SHA-256 해시로 저장됩니다.
+* The classification performance depends on the quality of the YOLO model.
+* The load cell requires calibration for accurate weight measurement.
+* The ultrasonic sensor and servo motor must be physically adjusted for the actual bin structure.
+* The system currently stores logs locally as CSV files.
+* The UI is optimized for 800x480 LCD displays.
 
 ---
 
-## 관리자 모드
+## 20. Future Improvements
 
-초기 관리자 비밀번호는 다음과 같습니다.
+Possible future improvements include:
 
-```text
-0000
-```
-
-관리자 모드에서 사용할 수 있는 기능은 다음과 같습니다.
-
-- 센서 상태 확인
-- 초음파 안전 테스트
-- Servo Motor 테스트
-- 카메라 테스트
-- 화재 경보 테스트
-- 수거함 무게 초기화
-- 사용자 목록 확인
-- 전체 분류 로그 확인
-- 로그 초기화
-
-GitHub 공개 전에는 `ADMIN_PASSWORD` 값을 반드시 변경하는 것을 권장합니다.
+* Web dashboard for remote monitoring
+* Database integration instead of CSV logs
+* Cloud-based log backup
+* More accurate waste detection model
+* Multi-object detection
+* QR-based user login
+* Automatic bin fullness notification
+* Improved model training dataset
+* Real-time object detection preview
+* Mobile app integration
 
 ---
 
-## GitHub 업로드 시 제외 권장 파일
+## 21. Example Use Cases
 
-개인정보, 실행 로그, 캡처 이미지, 학습 모델은 용량 또는 개인정보 문제로 GitHub에 직접 올리지 않는 것을 권장합니다.
+This project can be used for:
 
-`.gitignore` 예시는 다음과 같습니다.
-
-```gitignore
-# Python
-__pycache__/
-*.pyc
-.venv/
-
-# Runtime data
-captures/
-logs/*.csv
-logs/users.json
-
-# Model files
-models/*.pt
-models/*.onnx
-
-# OS / Editor
-.DS_Store
-.vscode/
-.idea/
-```
-
-모델 파일을 함께 관리해야 한다면 Git LFS 사용을 권장합니다.
+* AIoT prototype demonstration
+* Smart recycling education
+* Computer vision-based waste sorting research
+* Raspberry Pi sensor integration practice
+* University IoT or embedded system projects
+* Environmental technology proof-of-concept
 
 ---
 
-## 주의사항
+## 22. License
 
-- Raspberry Pi 5에서는 GPIO 제어를 위해 `lgpio` 기반 pin factory를 사용합니다.
-- HC-SR04 Echo 핀은 Raspberry Pi GPIO에 직접 연결하지 말고 전압 분배 회로를 사용해야 합니다.
-- 로드셀 무게 측정은 실제 하드웨어 환경에 맞게 `HX711_CALIBRATION_FACTOR` 보정이 필요합니다.
-- Servo Motor 각도는 분류함 구조에 따라 반드시 재조정해야 합니다.
-- `USE_DHT`, `USE_ULTRASONIC`, `USE_SERVO`, `USE_LOADCELL` 값이 `False`이면 해당 하드웨어 기능은 시연용 흐름으로만 동작합니다.
-- 공개 저장소에 업로드할 경우 관리자 비밀번호, 사용자 로그, 캡처 이미지는 제외하는 것이 좋습니다.
+This project is provided for educational and prototype purposes.
+
+You may modify and extend the code according to your own hardware configuration and project requirements.
 
 ---
 
-## 향후 개선 방향
+## 23. Author
 
-- 분류 모델 정확도 향상을 위한 데이터셋 추가 수집
-- 카테고리별 객체 검출 박스 시각화 개선
-- 관리자 웹 대시보드 연동
-- 수거함 가득 참 알림 기능 고도화
-- 포인트 시스템 DB 연동
-- 사용자별 친환경 기여도 통계 제공
-- 시스템 자동 실행 서비스 등록
-
----
-
-## License
-
-This project is for educational and demonstration purposes.  
-라이선스는 프로젝트 공개 범위에 맞게 별도로 지정할 수 있습니다.
+Developed as an AIoT smart recycling prototype using Raspberry Pi 5, camera-based classification, sensor integration, and touch display interaction.
