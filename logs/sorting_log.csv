@@ -1,0 +1,9 @@
+Time,User ID,User Total Points,Predicted Category,Final Category,Method,Confidence,User Confirmed,Earned Points,Bin Weight,Image Path,Status
+2026-06-11 01:23:21,2222,10,Can/Metal,Can/Metal,Auto,0.312,Yes,10,0.000kg,captures/capture_20260611_012317.jpg,Success
+2026-06-11 01:23:32,2222,20,Can/Metal,Can/Metal,Auto,0.429,Yes,10,0.000kg,captures/capture_20260611_012329.jpg,Success
+2026-06-11 01:28:28,3333,10,Paper,General Waste,Manual,N/A,Corrected,10,0.000kg,captures/capture_20260611_012822.jpg,Success
+2026-06-11 01:32:13,1111,40,,General Waste,Manual,N/A,Manual,10,0.000kg,captures/capture_20260611_013207.jpg,Success
+2026-06-11 01:32:34,1111,50,Paper,General Waste,Manual,N/A,Corrected,10,0.000kg,captures/capture_20260611_013223.jpg,Success
+2026-06-11 01:33:52,1111,60,Paper,Paper,Auto,0.848,Yes,10,0.000kg,captures/capture_20260611_013348.jpg,Success
+2026-06-11 01:34:11,1111,70,Can/Metal,Can/Metal,Auto,0.442,Yes,10,0.000kg,captures/capture_20260611_013408.jpg,Success
+2026-06-11 01:35:25,Guest,N/A,Plastic,Plastic,Auto,0.506,Yes,0,0.000kg,captures/capture_20260611_013521.jpg,Success

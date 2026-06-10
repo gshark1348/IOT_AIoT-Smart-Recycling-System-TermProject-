@@ -1,0 +1,23 @@
+{
+  "1111": {
+    "id": "1111",
+    "name": "User 1111",
+    "pin_hash": "9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0",
+    "points": 70,
+    "created_at": "2026-06-11 01:21:04"
+  },
+  "2222": {
+    "id": "2222",
+    "name": "User 2222",
+    "pin_hash": "9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0",
+    "points": 20,
+    "created_at": "2026-06-11 01:23:04"
+  },
+  "3333": {
+    "id": "3333",
+    "name": "User 3333",
+    "pin_hash": "9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0",
+    "points": 10,
+    "created_at": "2026-06-11 01:28:11"
+  }
+}
