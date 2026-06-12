@@ -23,6 +23,8 @@ GPIO 번호는 BCM 번호 기준입니다.
 """
 
 import os
+# Raspberry Pi 5에서는 lgpio 기반 GPIO 제어를 권장합니다.
+# gpiozero import 전에 설정해야 합니다.
 os.environ.setdefault("GPIOZERO_PIN_FACTORY", "lgpio")
 
 import csv
@@ -820,7 +822,7 @@ class App:
         use_picamera2 = False
 
         try:
-            from picamera2 import Picamera2
+            from picamera2 import Picamera2 #type: ignore
             picam2 = Picamera2()
             config = picam2.create_preview_configuration(
                 main={

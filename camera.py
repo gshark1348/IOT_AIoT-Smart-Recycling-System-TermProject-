@@ -4,7 +4,7 @@ import time
 from config import *
 
 try:
-    from picamera2 import Picamera2
+    from picamera2 import Picamera2 # type: ignore
     PICAMERA_OK = True
 except Exception as e:
     print("[WARN] Picamera2 로드 실패:", e)

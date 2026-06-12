@@ -1,4 +1,8 @@
 import os
+# Raspberry Pi 5에서는 lgpio 기반 GPIO 제어를 권장합니다.
+# gpiozero import 전에 설정해야 합니다.
+os.environ.setdefault("GPIOZERO_PIN_FACTORY", "lgpio")
+
 import time
 
 from config import *
@@ -6,10 +10,6 @@ from config import *
 # ============================================================
 # 1. 라이브러리 import
 # ============================================================
-
-# Raspberry Pi 5에서는 lgpio 기반 GPIO 제어를 권장합니다.
-# gpiozero import 전에 설정해야 합니다.
-os.environ.setdefault("GPIOZERO_PIN_FACTORY", "lgpio")
 
 try:
     from gpiozero import LED, DistanceSensor, AngularServo, DigitalInputDevice, DigitalOutputDevice, PWMOutputDevice
