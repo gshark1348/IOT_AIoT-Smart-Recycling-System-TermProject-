@@ -1,12 +1,9 @@
 import time
 import cv2
+import gc
 from config import CAMERA_WIDTH, CAMERA_HEIGHT
 
-# ============================================================
-# 카메라 제어
-# ============================================================
-
-class Camera:
+class CameraController:
     def __init__(self):
         self.picam2 = None
         self.cap = None
@@ -41,16 +38,22 @@ class Camera:
             except Exception:
                 pass
             self.picam2 = None
+            
+            try:
+                self.cap = cv2.VideoCapture(0)
+                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH)
+                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT)
+            except Exception:
+                pass
 
-        return self.use_picamera2
+        return self.use_picamera2 or (self.cap is not None and self.cap.isOpened())
 
     def get_frame(self):
         if self.use_picamera2:
             frame_rgb = self.picam2.capture_array()
             return True, frame_rgb
         else:
-            # 원본 코드와 동일하게 캡처 실패 시 건너뛰는 구조 유지
-            if self.cap is not None:
+            if self.cap is not None and self.cap.isOpened():
                 ok, frame_bgr = self.cap.read()
                 if not ok:
                     return False, None
@@ -72,9 +75,7 @@ class Camera:
         except Exception:
             pass
 
-        # 원본 로직에 있던 강제 가비지 컬렉터 호출
         try:
-            import gc
             gc.collect()
         except Exception:
             pass

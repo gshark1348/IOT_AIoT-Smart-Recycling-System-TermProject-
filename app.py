@@ -24,7 +24,6 @@ GPIO 번호는 BCM 번호 기준입니다.
 
 import os
 
-from camera import Camera
 # Raspberry Pi 5에서는 lgpio 기반 GPIO 제어를 권장합니다.
 # gpiozero import 전에 설정해야 합니다.
 os.environ.setdefault("GPIOZERO_PIN_FACTORY", "lgpio")
@@ -684,6 +683,7 @@ class App:
             ).pack(pady=(4, 0))
 
         return self.wait_action()
+
     def auto_capture(self):
         self.clear()
         self.root.configure(bg="#edf4f8")
@@ -818,7 +818,8 @@ class App:
             except Exception:
                 return None
 
-        camera = Camera()
+        from hardware.camera import CameraController
+        camera = CameraController()
         use_picamera2 = camera.start()
 
         if not use_picamera2:

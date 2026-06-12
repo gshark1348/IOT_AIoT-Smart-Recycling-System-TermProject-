@@ -5,8 +5,9 @@ from .servo import ServoController
 from .ultrasonic import UltrasonicController
 from .dht_sensor import DHTController
 from .loadcell import LoadCellController
+from .camera import CameraController
 
-class Hardware:
+class HardwareManager:
     def __init__(self):
         self._led = LEDController()
         self._buzzer = BuzzerController()
@@ -15,6 +16,7 @@ class Hardware:
         self._ultrasonic = UltrasonicController()
         self._dht = DHTController()
         self._loadcell = LoadCellController()
+        self._camera = CameraController()
 
     # --- LED API ---
     def led_on(self):
@@ -64,3 +66,13 @@ class Hardware:
 
     def check_full(self):
         return self._loadcell.check_full()
+
+    # --- Camera API ---
+    def start_camera(self):
+        return self._camera.start()
+
+    def get_camera_frame(self):
+        return self._camera.get_frame()
+
+    def stop_camera(self):
+        self._camera.stop()
