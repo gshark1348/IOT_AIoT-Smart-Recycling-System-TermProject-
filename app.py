@@ -23,6 +23,8 @@ GPIO 번호는 BCM 번호 기준입니다.
 """
 
 import os
+
+from camera import Camera
 # Raspberry Pi 5에서는 lgpio 기반 GPIO 제어를 권장합니다.
 # gpiozero import 전에 설정해야 합니다.
 os.environ.setdefault("GPIOZERO_PIN_FACTORY", "lgpio")
@@ -816,39 +818,8 @@ class App:
             except Exception:
                 return None
 
-        # Camera open
-        picam2 = None
-        cap = None
-        use_picamera2 = False
-
-        try:
-            from picamera2 import Picamera2 #type: ignore
-            picam2 = Picamera2()
-            config = picam2.create_preview_configuration(
-                main={
-                    "size": (CAMERA_WIDTH, CAMERA_HEIGHT),
-                    "format": "RGB888"
-                }
-            )
-            picam2.configure(config)
-            picam2.start()
-            use_picamera2 = True
-            time.sleep(0.5)
-        except Exception as e:
-            print("[Camera] Picamera2 failed:", e)
-            try:
-                if picam2 is not None:
-                    try:
-                        picam2.stop()
-                    except Exception:
-                        pass
-                    try:
-                        picam2.close()
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-            picam2 = None
+        camera = Camera()
+        use_picamera2 = camera.start()
 
         if not use_picamera2:
             self.message_screen(
@@ -877,13 +848,9 @@ class App:
                 if self.action == "CANCEL":
                     return None
 
-                if use_picamera2:
-                    frame_rgb = picam2.capture_array()
-                else:
-                    ok, frame_bgr = cap.read()
-                    if not ok:
-                        continue
-                    frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+                ok, frame_rgb = camera.get_frame()
+                if not ok:
+                    continue
 
                 gray = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2GRAY)
                 gray = cv2.GaussianBlur(gray, (5, 5), 0)
@@ -926,7 +893,6 @@ class App:
                     text=f"Stability: {stability_percent}%  |  Motion score: {diff_value:.2f}"
                 )
 
-                # Bigger preview area
                 img = Image.fromarray(display_frame)
                 max_w = 720
                 max_h = 335
@@ -961,30 +927,8 @@ class App:
                 time.sleep(max(0.01, 1.0 / max(1, CAMERA_FPS)))
 
         finally:
-            try:
-                if picam2 is not None:
-                    try:
-                        picam2.stop()
-                    except Exception:
-                        pass
-                    try:
-                        picam2.close()
-                    except Exception:
-                        pass
-            except Exception:
-                pass
+            camera.stop()
 
-            try:
-                import gc
-                gc.collect()
-            except Exception:
-                pass
-
-            try:
-                if cap is not None:
-                    cap.release()
-            except Exception:
-                pass
     def result_screen(self, label, category, conf, image_path=None):
         self.clear()
 
